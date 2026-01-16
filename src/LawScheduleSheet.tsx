@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Download, Calendar, BookOpen, Clock, MapPin, Filter } from 'lucide-react';
 
 const LawScheduleSheet = () => {
@@ -134,12 +134,6 @@ const LawScheduleSheet = () => {
     link.href = URL.createObjectURL(blob);
     link.download = 'lich_hoc_luat.csv';
     link.click();
-  };
-
-  const phaseNames = {
-    1: 'Giai đoạn 1: Trước Tết',
-    2: 'Giai đoạn 2: Học kỳ chính',
-    3: 'Giai đoạn 3: Chuyên ngành'
   };
 
   return (
