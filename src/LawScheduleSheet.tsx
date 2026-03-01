@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Calendar as BigCalendar, dateFnsLocalizer, View, Navigate, type NavigateAction } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, View, Navigate } from 'react-big-calendar';
+import type { ToolbarProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Download, Calendar, BookOpen, Clock, MapPin, Filter, List, LayoutGrid, ChevronLeft, ChevronRight, CalendarCheck, CalendarRange, CalendarDays } from 'lucide-react';
@@ -51,24 +52,17 @@ type ViewMode = 'table' | 'calendar';
 // Ngày mặc định: tháng 3/2025 - thời điểm có nhiều lịch học
 const DEFAULT_CALENDAR_DATE = new Date(2025, 2, 1);
 
-type CustomToolbarProps = {
-  label: string;
-  onNavigate: (action: NavigateAction, date?: Date) => void;
-  onView: (view: View) => void;
-  view: View;
-  views: View[];
+const CALENDAR_VIEWS: View[] = ['month', 'week', 'day', 'agenda'];
+
+const viewLabels: Record<string, { label: string; icon: typeof Calendar }> = {
+  month: { label: 'Tháng', icon: Calendar },
+  week: { label: 'Tuần', icon: CalendarRange },
+  day: { label: 'Ngày', icon: CalendarDays },
+  agenda: { label: 'Danh sách', icon: List },
 };
 
-const CustomToolbar = ({ label, onNavigate, onView, view, views }: CustomToolbarProps) => {
-  const viewLabels: Record<string, { label: string; icon: typeof Calendar }> = {
-    month: { label: 'Tháng', icon: Calendar },
-    week: { label: 'Tuần', icon: CalendarRange },
-    work_week: { label: 'Tuần', icon: CalendarRange },
-    day: { label: 'Ngày', icon: CalendarDays },
-    agenda: { label: 'Danh sách', icon: List },
-  };
-
-  const filteredViews = views.filter((v) => v !== 'work_week');
+const CustomToolbar = (props: ToolbarProps<CalendarEvent>) => {
+  const { label, onNavigate, onView, view } = props;
 
   return (
     <div className="rbc-toolbar flex flex-wrap items-center justify-between gap-4 p-2">
@@ -105,7 +99,7 @@ const CustomToolbar = ({ label, onNavigate, onView, view, views }: CustomToolbar
 
       {/* Nút chế độ xem - bên phải */}
       <div className="flex gap-1">
-        {filteredViews.map((v) => {
+        {CALENDAR_VIEWS.map((v) => {
           const { label: vLabel, icon: Icon } = viewLabels[v] || { label: v, icon: Calendar };
           const isActive = view === v;
           return (
