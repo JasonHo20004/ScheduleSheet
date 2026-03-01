@@ -51,6 +51,9 @@ type ViewMode = 'table' | 'calendar';
 
 // Ngày mặc định: tháng 3/2025 - thời điểm có nhiều lịch học
 const DEFAULT_CALENDAR_DATE = new Date(2025, 2, 1);
+// Lịch học HK2 2025-2026: từ 01/2025 đến 07/2025
+const SCHEDULE_START = new Date(2025, 0, 1);
+const SCHEDULE_END = new Date(2025, 6, 31);
 
 const CALENDAR_VIEWS: View[] = ['month', 'week', 'day', 'agenda'];
 
@@ -70,7 +73,14 @@ const CustomToolbar = (props: ToolbarProps<CalendarEvent>) => {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onNavigate(Navigate.TODAY)}
+          onClick={() => {
+            const today = new Date();
+            if (today >= SCHEDULE_START && today <= SCHEDULE_END) {
+              onNavigate(Navigate.TODAY);
+            } else {
+              onNavigate(Navigate.DATE, DEFAULT_CALENDAR_DATE);
+            }
+          }}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <CalendarCheck size={18} />
