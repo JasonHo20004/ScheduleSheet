@@ -289,10 +289,12 @@ const LawScheduleSheet = () => {
           </div>
         </div>
 
-        {/* Calendar View */}
-        {viewMode === 'calendar' && (
-          <div className="bg-white rounded-lg shadow-lg p-4 mb-6" style={{ height: 600 }}>
-            <BigCalendar
+        {/* Calendar View - luôn mount để giữ state khi chuyển qua Bảng */}
+        <div
+          className="bg-white rounded-lg shadow-lg p-4 mb-6"
+          style={{ height: 600, display: viewMode === 'calendar' ? 'block' : 'none' }}
+        >
+          <BigCalendar
               localizer={localizer}
               events={calendarEvents}
               startAccessor="start"
@@ -328,8 +330,7 @@ const LawScheduleSheet = () => {
                 return { style: colors[phase] || { backgroundColor: '#6366f1' } };
               }}
             />
-          </div>
-        )}
+        </div>
 
         {/* Table View */}
         {viewMode === 'table' && (
