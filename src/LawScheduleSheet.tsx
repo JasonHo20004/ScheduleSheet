@@ -32,7 +32,7 @@ function parseTimeToHours(timeStr: string): { startHour: number; startMin: numbe
 function scheduleToEvents(schedule: ScheduleItem[]): CalendarEvent[] {
   return schedule.map((item, index) => {
     const [day, month] = item.date.split('/').map(Number);
-    const year = 2025;
+    const year = 2026;
     const { startHour, startMin, endHour, endMin } = parseTimeToHours(item.time);
     const start = new Date(year, month - 1, day, startHour, startMin);
     const end = new Date(year, month - 1, day, endHour, endMin);
@@ -49,11 +49,8 @@ function scheduleToEvents(schedule: ScheduleItem[]): CalendarEvent[] {
 
 type ViewMode = 'table' | 'calendar';
 
-// Ngày mặc định: tháng 3/2025 - thời điểm có nhiều lịch học
-const DEFAULT_CALENDAR_DATE = new Date(2025, 2, 1);
-// Lịch học HK2 2025-2026: từ 01/2025 đến 07/2025
-const SCHEDULE_START = new Date(2025, 0, 1);
-const SCHEDULE_END = new Date(2025, 6, 31);
+// Ngày mặc định: tháng 3/2026 - thời điểm có nhiều lịch học
+const DEFAULT_CALENDAR_DATE = new Date(2026, 2, 1);
 
 const CALENDAR_VIEWS: View[] = ['month', 'week', 'day', 'agenda'];
 
@@ -73,14 +70,7 @@ const CustomToolbar = (props: ToolbarProps<CalendarEvent>) => {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => {
-            const today = new Date();
-            if (today >= SCHEDULE_START && today <= SCHEDULE_END) {
-              onNavigate(Navigate.TODAY);
-            } else {
-              onNavigate(Navigate.DATE, DEFAULT_CALENDAR_DATE);
-            }
-          }}
+          onClick={() => onNavigate(Navigate.TODAY)}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <CalendarCheck size={18} />
