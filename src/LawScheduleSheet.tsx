@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Calendar as BigCalendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, View, Navigate, type NavigateAction } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Download, Calendar, BookOpen, Clock, MapPin, Filter, List, LayoutGrid } from 'lucide-react';
+import { Download, Calendar, BookOpen, Clock, MapPin, Filter, List, LayoutGrid, ChevronLeft, ChevronRight, CalendarCheck, CalendarRange, CalendarDays } from 'lucide-react';
+import { scheduleData, type ScheduleItem } from './scheduleData';
 
 const localizer = dateFnsLocalizer({
   format,
@@ -11,17 +12,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales: { 'vi': vi },
 });
-
-type ScheduleItem = {
-  week: number;
-  date: string;
-  day: string;
-  time: string;
-  subject: string;
-  room: string;
-  phase: number;
-  note?: string;
-};
 
 type CalendarEvent = {
   id: string;
@@ -58,119 +48,96 @@ function scheduleToEvents(schedule: ScheduleItem[]): CalendarEvent[] {
 
 type ViewMode = 'table' | 'calendar';
 
+// Ngày mặc định: tháng 3/2025 - thời điểm có nhiều lịch học
+const DEFAULT_CALENDAR_DATE = new Date(2025, 2, 1);
+
+type CustomToolbarProps = {
+  label: string;
+  onNavigate: (action: NavigateAction, date?: Date) => void;
+  onView: (view: View) => void;
+  view: View;
+  views: View[];
+};
+
+const CustomToolbar = ({ label, onNavigate, onView, view, views }: CustomToolbarProps) => {
+  const viewLabels: Record<string, { label: string; icon: typeof Calendar }> = {
+    month: { label: 'Tháng', icon: Calendar },
+    week: { label: 'Tuần', icon: CalendarRange },
+    work_week: { label: 'Tuần', icon: CalendarRange },
+    day: { label: 'Ngày', icon: CalendarDays },
+    agenda: { label: 'Danh sách', icon: List },
+  };
+
+  const filteredViews = views.filter((v) => v !== 'work_week');
+
+  return (
+    <div className="rbc-toolbar flex flex-wrap items-center justify-between gap-4 p-2">
+      {/* Nút điều hướng - bên trái */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onNavigate(Navigate.TODAY)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
+        >
+          <CalendarCheck size={18} />
+          Hôm nay
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate(Navigate.PREVIOUS)}
+          className="flex items-center gap-1 p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+        >
+          <ChevronLeft size={20} />
+          Trước
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate(Navigate.NEXT)}
+          className="flex items-center gap-1 p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+        >
+          Sau
+          <ChevronRight size={20} />
+        </button>
+      </div>
+
+      {/* Label tháng/ngày - giữa */}
+      <span className="text-lg font-semibold text-gray-800">{label}</span>
+
+      {/* Nút chế độ xem - bên phải */}
+      <div className="flex gap-1">
+        {filteredViews.map((v) => {
+          const { label: vLabel, icon: Icon } = viewLabels[v] || { label: v, icon: Calendar };
+          const isActive = view === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => onView(v)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <Icon size={16} />
+              {vLabel}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const LawScheduleSheet = () => {
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterPhase, setFilterPhase] = useState('all');
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [calendarView, setCalendarView] = useState<View>('month');
-
-  const scheduleData = [
-    // GIAI ĐOẠN 1
-    { week: 1, date: '20/01', day: 'Thứ 3', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'C.206NTT', phase: 1 },
-    { week: 1, date: '22/01', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 1 },
-    { week: 1, date: '22/01', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 1 },
-    { week: 1, date: '24/01', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 1 },
-    { week: 1, date: '24/01', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 1 },
-    
-    { week: 2, date: '27/01', day: 'Thứ 3', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'C.206NTT', phase: 1 },
-    { week: 2, date: '29/01', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 1 },
-    { week: 2, date: '29/01', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 1 },
-    
-    // Tuần 3, 4, 5, 6 nghỉ Tết - không có lịch học
-    
-    // GIAI ĐOẠN 2
-    { week: 7, date: '05/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
-    { week: 7, date: '05/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
-    
-    { week: 7, date: '05/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
-    { week: 7, date: '05/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
-    
-    { week: 8, date: '11/03', day: 'Thứ 4', time: 'Chiều (7-8)', subject: 'Sinh hoạt lớp', room: 'B.305NTT', phase: 2 },
-    { week: 8, date: '12/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
-    { week: 8, date: '12/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
-    { week: 8, date: '14/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 8, date: '14/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    
-    { week: 9, date: '19/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
-    { week: 9, date: '19/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
-    { week: 9, date: '21/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 9, date: '21/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    
-    { week: 10, date: '26/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2, note: 'Buổi cuối' },
-    { week: 10, date: '26/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
-    { week: 10, date: '28/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 10, date: '28/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    
-    { week: 11, date: '02/04', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 11, date: '02/04', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
-    { week: 11, date: '04/04', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 11, date: '04/04', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    
-    { week: 12, date: '08/04', day: 'Thứ 4', time: 'Chiều (7-8)', subject: 'Sinh hoạt lớp', room: 'B.305NTT', phase: 2 },
-    { week: 12, date: '09/04', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    { week: 12, date: '09/04', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
-    { week: 12, date: '11/04', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
-    { week: 12, date: '11/04', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    
-    { week: 13, date: '14/04', day: 'Thứ 3', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    { week: 13, date: '16/04', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
-    { week: 13, date: '18/04', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2, note: 'Buổi cuối' },
-    { week: 13, date: '18/04', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2, note: 'Buổi cuối' },
-    
-    // Tuần 14, 15 không có lịch học
-    
-    // Tuần 14, 15 không có lịch học
-    
-    // GIAI ĐOẠN 3
-    { week: 16, date: '05/05', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 16, date: '07/05', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 16, date: '07/05', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 16, date: '09/05', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 17, date: '12/05', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 17, date: '13/05', day: 'Thứ 4', time: 'Chiều (7-8)', subject: 'Sinh hoạt lớp', room: 'B.305NTT', phase: 3 },
-    { week: 17, date: '14/05', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 17, date: '14/05', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 17, date: '16/05', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 18, date: '19/05', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 18, date: '21/05', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 18, date: '21/05', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 18, date: '23/05', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 19, date: '26/05', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 19, date: '28/05', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 19, date: '28/05', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 19, date: '30/05', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 20, date: '02/06', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 20, date: '04/06', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 20, date: '04/06', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 20, date: '06/06', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 21, date: '09/06', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 21, date: '10/06', day: 'Thứ 4', time: 'Chiều (7-8)', subject: 'Sinh hoạt lớp', room: 'B.305NTT', phase: 3 },
-    { week: 21, date: '11/06', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 21, date: '11/06', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 21, date: '13/06', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 22, date: '16/06', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3 },
-    { week: 22, date: '18/06', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3 },
-    { week: 22, date: '18/06', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 22, date: '20/06', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3 },
-    
-    { week: 23, date: '23/06', day: 'Thứ 3', time: 'Sáng (1-5)', subject: 'Luật biển', room: 'B.305NTT', phase: 3, note: 'Buổi cuối' },
-    { week: 23, date: '25/06', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Luật Đất đai', room: 'B.305NTT', phase: 3, note: 'Buổi cuối' },
-    { week: 23, date: '25/06', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 23, date: '27/06', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hôn nhân và gia đình', room: 'B.305NTT', phase: 3, note: 'Buổi cuối' },
-    
-    { week: 24, date: '30/06', day: 'Thứ 3', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 24, date: '02/07', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3 },
-    { week: 24, date: '04/07', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 3, note: 'Buổi cuối' },
-  ];
+  const [calendarDate, setCalendarDate] = useState<Date>(DEFAULT_CALENDAR_DATE);
 
   const subjects = [...new Set(scheduleData.map(item => item.subject))];
-  
+
   const filteredData = useMemo(() => {
     return scheduleData.filter(item => {
       const subjectMatch = filterSubject === 'all' || item.subject === filterSubject;
@@ -318,27 +285,6 @@ const LawScheduleSheet = () => {
           </div>
         </div>
 
-        {/* Calendar view type selector - only when in calendar mode */}
-        {viewMode === 'calendar' && (
-          <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
-            <div className="flex gap-2 flex-wrap">
-              {(['month', 'week', 'day', 'agenda'] as const).map((view) => (
-                <button
-                  key={view}
-                  onClick={() => setCalendarView(view)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    calendarView === view
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {view === 'month' ? 'Tháng' : view === 'week' ? 'Tuần' : view === 'day' ? 'Ngày' : 'Danh sách'}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Calendar View */}
         {viewMode === 'calendar' && (
           <div className="bg-white rounded-lg shadow-lg p-4 mb-6" style={{ height: 600 }}>
@@ -350,7 +296,10 @@ const LawScheduleSheet = () => {
               titleAccessor="title"
               view={calendarView}
               onView={setCalendarView}
+              date={calendarDate}
+              onNavigate={(date) => setCalendarDate(date)}
               culture="vi"
+              components={{ toolbar: CustomToolbar }}
               messages={{
                 today: 'Hôm nay',
                 previous: 'Trước',
