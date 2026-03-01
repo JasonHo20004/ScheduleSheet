@@ -25,20 +25,24 @@ const LawScheduleSheet = () => {
     
     { week: 7, date: '05/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
     { week: 7, date: '05/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
+    { week: 7, date: '05/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
     
     { week: 8, date: '11/03', day: 'Thứ 4', time: 'Chiều (7-8)', subject: 'Sinh hoạt lớp', room: 'B.305NTT', phase: 2 },
     { week: 8, date: '12/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
     { week: 8, date: '12/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
+    { week: 8, date: '12/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
     { week: 8, date: '14/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
     { week: 8, date: '14/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
     
     { week: 9, date: '19/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2 },
     { week: 9, date: '19/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
+    { week: 9, date: '19/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
     { week: 9, date: '21/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
     { week: 9, date: '21/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
     
     { week: 10, date: '26/03', day: 'Thứ 5', time: 'Sáng (1-5)', subject: 'Lịch sử Đảng Cộng sản VN', room: 'B.305NTT', phase: 2, note: 'Buổi cuối' },
     { week: 10, date: '26/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Luật Lao động', room: 'B.305NTT', phase: 2 },
+    { week: 10, date: '26/03', day: 'Thứ 5', time: 'Chiều (7-11)', subject: 'Pháp luật thương mại HH & DV', room: 'B.305NTT', phase: 2 },
     { week: 10, date: '28/03', day: 'Thứ 7', time: 'Sáng (1-5)', subject: 'Luật Ngân hàng', room: 'B.305NTT', phase: 2 },
     { week: 10, date: '28/03', day: 'Thứ 7', time: 'Chiều (7-11)', subject: 'Luật Hình sự phần chung', room: 'B.305NTT', phase: 2 },
     
