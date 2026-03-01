@@ -1,9 +1,68 @@
 import { useState, useMemo } from 'react';
-import { Download, Calendar, BookOpen, Clock, MapPin, Filter } from 'lucide-react';
+import { Calendar as BigCalendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { vi } from 'date-fns/locale';
+import { Download, Calendar, BookOpen, Clock, MapPin, Filter, List, LayoutGrid } from 'lucide-react';
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales: { 'vi': vi },
+});
+
+type ScheduleItem = {
+  week: number;
+  date: string;
+  day: string;
+  time: string;
+  subject: string;
+  room: string;
+  phase: number;
+  note?: string;
+};
+
+type CalendarEvent = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  resource: ScheduleItem;
+};
+
+function parseTimeToHours(timeStr: string): { startHour: number; startMin: number; endHour: number; endMin: number } {
+  if (timeStr.includes('Sáng (1-5)')) return { startHour: 7, startMin: 0, endHour: 11, endMin: 30 };
+  if (timeStr.includes('Chiều (7-11)')) return { startHour: 13, startMin: 0, endHour: 17, endMin: 30 };
+  if (timeStr.includes('Chiều (7-8)')) return { startHour: 13, startMin: 0, endHour: 14, endMin: 0 };
+  return { startHour: 7, startMin: 0, endHour: 11, endMin: 30 };
+}
+
+function scheduleToEvents(schedule: ScheduleItem[]): CalendarEvent[] {
+  return schedule.map((item, index) => {
+    const [day, month] = item.date.split('/').map(Number);
+    const year = 2025;
+    const { startHour, startMin, endHour, endMin } = parseTimeToHours(item.time);
+    const start = new Date(year, month - 1, day, startHour, startMin);
+    const end = new Date(year, month - 1, day, endHour, endMin);
+    const title = item.note ? `${item.subject} (${item.note})` : item.subject;
+    return {
+      id: `event-${index}`,
+      title: `${title} - ${item.room}`,
+      start,
+      end,
+      resource: item,
+    };
+  });
+}
+
+type ViewMode = 'table' | 'calendar';
 
 const LawScheduleSheet = () => {
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterPhase, setFilterPhase] = useState('all');
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [calendarView, setCalendarView] = useState<View>('month');
 
   const scheduleData = [
     // GIAI ĐOẠN 1
@@ -120,6 +179,8 @@ const LawScheduleSheet = () => {
     });
   }, [filterSubject, filterPhase]);
 
+  const calendarEvents = useMemo(() => scheduleToEvents(filteredData), [filteredData]);
+
   const exportToCSV = () => {
     const headers = ['Tuần', 'Ngày', 'Thứ', 'Giờ học', 'Môn học', 'Phòng', 'Ghi chú'];
     const csvContent = [
@@ -149,13 +210,35 @@ const LawScheduleSheet = () => {
               </h1>
               <p className="text-gray-600 mt-2">Quản lý và theo dõi lịch học các môn luật</p>
             </div>
-            <button
-              onClick={exportToCSV}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              <Download size={20} />
-              Xuất CSV
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('calendar')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === 'calendar' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <LayoutGrid size={18} />
+                  Lịch
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    viewMode === 'table' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  <List size={18} />
+                  Bảng
+                </button>
+              </div>
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Download size={20} />
+                Xuất CSV
+              </button>
+            </div>
           </div>
         </div>
 
@@ -235,7 +318,68 @@ const LawScheduleSheet = () => {
           </div>
         </div>
 
-        {/* Table */}
+        {/* Calendar view type selector - only when in calendar mode */}
+        {viewMode === 'calendar' && (
+          <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="flex gap-2 flex-wrap">
+              {(['month', 'week', 'day', 'agenda'] as const).map((view) => (
+                <button
+                  key={view}
+                  onClick={() => setCalendarView(view)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    calendarView === view
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {view === 'month' ? 'Tháng' : view === 'week' ? 'Tuần' : view === 'day' ? 'Ngày' : 'Danh sách'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Calendar View */}
+        {viewMode === 'calendar' && (
+          <div className="bg-white rounded-lg shadow-lg p-4 mb-6" style={{ height: 600 }}>
+            <BigCalendar
+              localizer={localizer}
+              events={calendarEvents}
+              startAccessor="start"
+              endAccessor="end"
+              titleAccessor="title"
+              view={calendarView}
+              onView={setCalendarView}
+              culture="vi"
+              messages={{
+                today: 'Hôm nay',
+                previous: 'Trước',
+                next: 'Sau',
+                month: 'Tháng',
+                week: 'Tuần',
+                day: 'Ngày',
+                agenda: 'Danh sách',
+                date: 'Ngày',
+                time: 'Giờ',
+                event: 'Sự kiện',
+                noEventsInRange: 'Không có buổi học trong khoảng thời gian này.',
+                showMore: (total: number) => `+${total} nữa`,
+              }}
+              eventPropGetter={(event: CalendarEvent) => {
+                const phase = event.resource?.phase;
+                const colors: Record<number, { backgroundColor: string }> = {
+                  1: { backgroundColor: '#3b82f6' },
+                  2: { backgroundColor: '#059669' },
+                  3: { backgroundColor: '#7c3aed' },
+                };
+                return { style: colors[phase] || { backgroundColor: '#6366f1' } };
+              }}
+            />
+          </div>
+        )}
+
+        {/* Table View */}
+        {viewMode === 'table' && (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -291,6 +435,7 @@ const LawScheduleSheet = () => {
             </table>
           </div>
         </div>
+        )}
 
         {/* Footer note */}
         <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
